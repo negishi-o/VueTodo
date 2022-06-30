@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ja">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>CRUD Todo</title>
+        <style>
+            .done {
+                opacity: 0.3;
+                text-decoration: line-through;
+            }
+
+            ul,
+            li {
+                list-style: none;
+            }
+
+            .edit {
+                /* input */
+                display: none;
+                /* 最初は非表示 */
+            }
+
+            /* 親要素にクラスが付与された場合input要素を表示 */
+            .editing .edit {
+                /* li > input */
+                display: inline;
+                /* 改行無しで右に表示 */
+            }
+        </style>
+    </head>
+    <body>
+        <div id="app">
+            <h1>{{ state.title }}</h1>
+            <input v-model="state.newMsg" @keyup.enter="addTodo" autofocus />
+            <ul>
+                <li v-for="todo in state.todos" :class="{
+						done: todo.completed,
+						editing: todo === state.editObj
+						}" : key="todo.id">
+                    <input type="checkbox" v-model="todo.completed" />&nbsp; <label @dblclick="editTodo(todo)"> {{ todo.msg }} </label>&nbsp; <input class="edit" v-model="state.editMsg" @keyup.enter="updateTodo(todo)">&nbsp; <button @click="deleteTodo(todo)">X</button>
+                </li>
+            </ul>
+            <div v-if="existsTodo()">
+                登録件数&nbsp;<strong>{{ todoCount() }}</strong>個
+            </div>
+        </div>
+        <script src="https://unpkg.com/vue@next"></script>
+        <script>
+            Vue.createApp({
+                setup() {
+                    const state = Vue.reactive({
+                        title: "CRUD Todo",
+                        newMsg: "",
+                        todos: [],
+                        editObj: null,
+                        editMsg: ''
+                    });
+
+                    Vue.onMounted(() => {
+                        getTodos()
+                    })
+                    const addTodo = () => {
+                        // 一覧にリストがなければ処理は終了(早期リターン)
+                        if (!state.newMsg) retrun;
+                        // 入力メッセージを配列一覧の最後に
+                        // 1件のオブジェクトとして追加
+                        state.todos.push({
+                            id: new Date().getTime(),
+                            completed: false,
+                            msg: state.newMsg,
+                        });
+                        // 追加が終わったのでフォームの入力値を空にする
+                        state.newMsg = "";
+                        addTodos()
+                    };
+
+                    const deleteTodo = (todoObj) => {
+                        const delIndex = state.todos.indexOf(todoObj);
+                        state.todos.splice(delIndex, 1);
+                        addTodos()
+                    };
+
+                    const existsTodo = () => {
+                        // オブジェクトが1以上ならtrueを返す
+                        return state.todos.length > 0
+                    }
+                    const todoCount = () => {
+                        // オブジェクトの個数を文字列で返す
+                        return state.todos.length.toString()
+                    }
+
+                    const editTodo = (todoObj) => {
+                        state.editObj = todoObj,
+                            state.editMsg = todoObj.msg
+                    }
+
+                    const updateTodo = (todoObj) => {
+                        todoObj.msg = state.editMsg
+                        state.editObj = null,
+                            state.editMsg = ''
+                        addTodos()
+                    }
+
+                    const addTodos = () => {
+                        localStorage.setItem('todos', JSON.stringify(state.todos))
+                    }
+                    const getTodos = () => {
+                        const todos = localStorage.getItem('todos')
+                        if (todos) {
+                            state.todos = JSON.parse(todos)
+                        }
+                    }
+                    return { state, addTodo, deleteTodo, existsTodo, todoCount, editTodo, updateTodo };
+                },
+            }).mount("#app");
+        </script>
+    </body>
+</html>
